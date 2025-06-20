@@ -1,0 +1,75 @@
+
+
+services:
+  # MongoDB database
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-Dareal14eva}
+      MONGO_INITDB_DATABASE: ${MONGODB_DB:-ancestrychain}
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - webnet
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js front-end
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ancestrychain/app
+    container_name: nextjs-app
+    env_file:
+      - .env.local
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+      - topola
+    networks:
+      - webnet
+
+  # Genealogy API backend
+  backend:
+    build:
+      # NOTE: adjust the path if you move projects – this points to the backend folder
+      # The path to your backend project. Set this in your .env file.
+      context: ./genealogy-backend
+    image: ancestrychain/backend
+    container_name: backend-api
+    env_file:
+      - ./genealogy-backend/.env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    networks:
+      - webnet
+
+  # Static Topola GEDCOM viewer
+  topola:
+    build:
+      context: ./topola-viewer
+    image: ancestrychain/topola
+    container_name: topola-viewer
+    ports:
+      - "8080:80"
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    driver: bridge
+
+volumes:
+  mongodb_data:

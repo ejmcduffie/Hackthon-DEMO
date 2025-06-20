@@ -1,0 +1,11 @@
+# Ignore large or unnecessary files from Docker build context
+node_modules
+.next
+.git
+.vscode
+*.log
+**/dist
+topola-viewer/dist
+Dockerfile
+Dockerfile.*
+docker-compose.yml
